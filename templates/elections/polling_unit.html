@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+
+{% block title %}Polling Unit Results{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Palette for bars ────────────────────────────────────────── */
+  :root {
+    --p0: #10b981; --p1: #3b82f6; --p2: #f59e0b; --p3: #8b5cf6;
+    --p4: #ef4444; --p5: #06b6d4; --p6: #f43f5e; --p7: #6366f1;
+    --p8: #84cc16; --p9: #ec4899;
+  }
+
+  /* ── Party rank badge ────────────────────────────────────────── */
+  .rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    font-size: .7rem;
+    font-weight: 800;
+    background: var(--border);
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .rank-badge.rank-1 {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(245,158,11,.4);
+  }
+
+  /* ── Vote share column ───────────────────────────────────────── */
+  .share-cell { min-width: 90px; }
+
+  .share-label {
+    font-size: .72rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 3px;
+  }
+
+  /* ── Party colour dot ────────────────────────────────────────── */
+  .party-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+
+  /* ── Chart canvas ────────────────────────────────────────────── */
+  .chart-canvas { width: 100% !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page header -->
+<div class="page-header">
+  <div class="page-header-noise"></div>
+  <div class="page-header-glow"></div>
+  <div class="container page-header-inner">
+    <div class="page-header-badge badge-green">
+      <i class="bi bi-geo-alt-fill"></i> Question 1
+    </div>
+    <h1><i class="bi bi-geo-alt-fill me-2" style="opacity:.7;"></i>Polling Unit Results</h1>
+    <p>Select any polling unit in Delta State to view per-party vote totals and chart.</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+
+  <!-- ============================================================
+       Selection card
+  ============================================================ -->
+  <div class="select-card mb-4 anim-fade-up">
+    <div class="select-card-header">
+      <div class="select-card-icon" style="color:#10b981;">
+        <i class="bi bi-funnel-fill"></i>
+      </div>
+      <span class="select-card-title">Choose a Polling Unit</span>
+
+      {% if polling_units %}
+      <span class="ms-auto" style="font-size:.72rem;font-weight:600;color:rgba(255,255,255,.3);letter-spacing:.04em;">
+        {{ polling_units|length }} units available
+      </span>
+      {% endif %}
+    </div>
+
+    <div class="select-card-body">
+      <form method="get" action="{% url 'polling_unit' %}" class="row g-3 align-items-end" id="puForm">
+
+        <!-- Live search input -->
+        <div class="col-12 col-md-9">
+          <label class="form-label">
+            Polling Unit
+            <span class="text-muted fw-normal ms-1" style="font-size:.8rem;">— Delta State</span>
+          </label>
+
+          <div class="search-filter-wrap mb-2">
+            <i class="bi bi-search"></i>
+            <input
+              type="text"
+              class="search-filter-input"
+              placeholder="Type to search polling units…"
+              data-search-select="polling_unit_uniqueid"
+              autocomplete="off"
+              id="puSearch"
+            />
+          </div>
+
+          <select
+            name="polling_unit_uniqueid"
+            id="polling_unit_uniqueid"
+            class="form-select form-select-lg"
+            size="1"
+          >
+            <option value="">— Select a polling unit —</option>
+            {% for unit in polling_units %}
+            <option
+              value="{{ unit.uniqueid }}"
+              {% if unit.uniqueid|stringformat:"s" == selected_uniqueid %}selected{% endif %}
+            >{{ unit.polling_unit_name }}</option>
+            {% endfor %}
+          </select>
+
+          <p class="form-text mt-2">
+            <i class="bi bi-info-circle me-1"></i>
+            Showing all Delta State polling units ordered alphabetically.
+            Use the search box to filter the list.
+          </p>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <button type="submit" class="btn btn-primary btn-lg w-100">
+            <i class="bi bi-search"></i> View Results
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       No selection yet
+  ============================================================ -->
+  {% if not selected_uniqueid %}
+  <div class="empty-prompt anim-fade-up">
+    <div class="empty-prompt-illustration">
+      <i class="bi bi-geo-alt"></i>
+    </div>
+    <h4>No polling unit selected</h4>
+    <p>Use the dropdown above to select a polling unit and view its election results.</p>
+  </div>
+
+  <!-- ============================================================
+       Unit selected but no results
+  ============================================================ -->
+  {% elif not results %}
+  <div class="alert alert-info d-flex align-items-center gap-3 p-3 rounded-3 border-0 shadow-sm anim-fade-up"
+       style="background:#eff6ff; border-left:4px solid #3b82f6 !important; border:none;">
+    <i class="bi bi-info-circle-fill fs-5 text-primary flex-shrink-0"></i>
+    <div>
+      No results have been recorded for
+      <strong>{{ selected_unit.polling_unit_name }}</strong> yet.
+      <a href="{% url 'add_result' %}" class="ms-1 fw-bold text-decoration-none">
+        Add results now <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Results display
+  ============================================================ -->
+  {% else %}
+
+  <!-- Unit heading -->
+  <div class="entity-title-block green-variant anim-fade-up">
+    <div class="entity-icon green-icon"><i class="bi bi-geo-alt-fill"></i></div>
+    <div>
+      <p class="entity-name">{{ selected_unit.polling_unit_name }}</p>
+      {% if selected_unit.polling_unit_description %}
+      <p class="entity-sub">
+        <i class="bi bi-info-circle me-1"></i>{{ selected_unit.polling_unit_description }}
+      </p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Stat strip -->
+  <div class="stat-strip anim-fade-up">
+
+    <div class="stat-tile tile-blue">
+      <div class="stat-tile-icon"><i class="bi bi-ballot-fill"></i></div>
+      <div class="stat-tile-value count-up" data-target="{{ total_votes }}">{{ total_votes }}</div>
+      <div class="stat-tile-label">Total Votes Cast</div>
+    </div>
+
+    <div class="stat-tile tile-green">
+      <div class="stat-tile-icon"><i class="bi bi-flag-fill"></i></div>
+      <div class="stat-tile-value count-up" data-target="{{ results|length }}">{{ results|length }}</div>
+      <div class="stat-tile-label">Parties Participated</div>
+    </div>
+
+    <div class="stat-tile tile-gold">
+      <div class="stat-tile-icon"><i class="bi bi-trophy-fill"></i></div>
+      <div class="stat-tile-value">{{ winner.party_abbreviation }}</div>
+      <div class="stat-tile-label">Winning Party</div>
+    </div>
+
+    <div class="stat-tile tile-purple">
+      <div class="stat-tile-icon"><i class="bi bi-bar-chart-fill"></i></div>
+      <div class="stat-tile-value count-up" data-target="{{ winner.party_score }}">{{ winner.party_score }}</div>
+      <div class="stat-tile-label">Winner's Votes</div>
+    </div>
+
+  </div>
+
+  <!-- Table + Chart -->
+  <div class="row g-4 anim-fade-up anim-fade-up-1">
+
+    <!-- Table -->
+    <div class="col-lg-5">
+      <div class="results-panel h-100">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <i class="bi bi-table" style="color:#10b981;"></i>
+            Results Breakdown
+          </div>
+          <span style="font-size:.7rem;color:rgba(255,255,255,.3);">
+            {{ results|length }} parties
+          </span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width:40px;">#</th>
+                <th>Party</th>
+                <th class="text-end" style="width:80px;">Votes</th>
+                <th class="share-cell">Share</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for result in results %}
+              <tr {% if forloop.first %}class="row-winner"{% endif %}>
+                <td>
+                  <span class="rank-badge {% if forloop.first %}rank-1{% endif %}">
+                    {{ forloop.counter }}
+                  </span>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="party-dot"
+                      style="background: var(--p{{ forloop.counter0|add:'0' }}, #94a3b8);"></span>
+                    <span class="fw-600">{{ result.party_abbreviation }}</span>
+                    {% if forloop.first %}
+                    <span class="badge bg-success" style="font-size:.62rem;">
+                      <i class="bi bi-trophy-fill me-1"></i>Winner
+                    </span>
+                    {% endif %}
+                  </div>
+                </td>
+                <td class="text-end fw-700">{{ result.party_score }}</td>
+                <td class="share-cell">
+                  {% if total_votes %}
+                    {% widthratio result.party_score total_votes 100 as pct %}
+                    <div class="share-label">{{ pct }}%</div>
+                    <div class="vote-bar-track">
+                      <div class="vote-bar-fill"
+                        style="--bar-color:var(--p{{ forloop.counter0|add:'0' }}, #94a3b8); width:{{ pct }}%;"></div>
+                    </div>
+                  {% else %}
+                    <div class="share-label">0%</div>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2">Total</td>
+                <td class="text-end">{{ total_votes }}</td>
+                <td>100%</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="col-lg-7">
+      <div class="results-panel h-100" style="min-height:420px;">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <i class="bi bi-bar-chart-horizontal" style="color:#10b981;"></i>
+            Vote Distribution
+          </div>
+          <span style="font-size:.7rem;color:rgba(255,255,255,.3);">
+            {{ selected_unit.polling_unit_name }}
+          </span>
+        </div>
+        <div class="chart-body" style="min-height:360px;">
+          <canvas id="resultsChart" class="chart-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /row -->
+  {% endif %}
+
+</div><!-- /container -->
+{% endblock %}
+
+{% block extra_scripts %}
+{% if chart_labels and chart_data %}
+<script>
+(function () {
+  'use strict';
+
+  const labels = {{ chart_labels|safe }};
+  const data   = {{ chart_data|safe }};
+
+  const palette = [
+    '#10b981','#3b82f6','#f59e0b','#8b5cf6','#ef4444',
+    '#06b6d4','#f43f5e','#6366f1','#84cc16','#ec4899',
+    '#14b8a6','#eab308','#a855f7','#64748b','#78716c',
+  ];
+
+  const colors = labels.map((_, i) => palette[i % palette.length]);
+
+  // Gradient fills
+  const ctx = document.getElementById('resultsChart');
+  if (!ctx) return;
+  const cctx = ctx.getContext('2d');
+
+  const bgColors = colors.map(c => {
+    const g = cctx.createLinearGradient(0, 0, 800, 0);
+    g.addColorStop(0, c + 'ee');
+    g.addColorStop(1, c + '55');
+    return g;
+  });
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Votes',
+        data,
+        backgroundColor: bgColors,
+        borderColor: colors,
+        borderWidth: 0,
+        borderRadius: 7,
+        borderSkipped: false,
+        barThickness: 'flex',
+        maxBarThickness: 38,
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: 900,
+        easing: 'easeOutCubic',
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleColor: '#94a3b8',
+          bodyColor: '#fff',
+          borderColor: 'rgba(255,255,255,.08)',
+          borderWidth: 1,
+          padding: { top: 10, bottom: 10, left: 14, right: 14 },
+          cornerRadius: 10,
+          displayColors: true,
+          boxWidth: 10,
+          boxHeight: 10,
+          boxPadding: 4,
+          callbacks: {
+            label: ctx => `  ${ctx.parsed.x.toLocaleString()} votes`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,.04)', drawBorder: false },
+          border: { display: false },
+          ticks: {
+            font: { size: 11, family: 'Inter' },
+            color: '#94a3b8',
+            callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v,
+          },
+        },
+        y: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: {
+            font: { size: 12, weight: '600', family: 'Inter' },
+            color: '#475569',
+          },
+        },
+      },
+    },
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

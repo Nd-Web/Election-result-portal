@@ -1,0 +1,816 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Hero ──────────────────────────────────────────────────── */
+  .hero {
+    background: linear-gradient(135deg, #060e1c 0%, #0f172a 50%, #0c2242 100%);
+    position: relative;
+    overflow: hidden;
+    padding: 5.5rem 0 5rem;
+    isolation: isolate;
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(16,185,129,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(16,185,129,.035) 1px, transparent 1px);
+    background-size: 52px 52px;
+    pointer-events: none;
+  }
+
+  /* Radial glow blobs */
+  .hero-blob {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(80px);
+    opacity: .55;
+  }
+
+  .hero-blob-1 {
+    width: 600px; height: 600px;
+    top: -200px; right: -180px;
+    background: radial-gradient(circle, rgba(16,185,129,.15), transparent 70%);
+  }
+
+  .hero-blob-2 {
+    width: 450px; height: 450px;
+    bottom: -150px; left: -120px;
+    background: radial-gradient(circle, rgba(59,130,246,.1), transparent 70%);
+  }
+
+  .hero-blob-3 {
+    width: 300px; height: 300px;
+    top: 30%; left: 40%;
+    background: radial-gradient(circle, rgba(245,158,11,.06), transparent 70%);
+  }
+
+  .hero-content { position: relative; z-index: 1; }
+
+  /* Eyebrow pill */
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    background: rgba(16,185,129,.08);
+    border: 1px solid rgba(16,185,129,.18);
+    color: #34d399;
+    border-radius: 99px;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: .32rem 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    background: #10b981;
+    border-radius: 50%;
+    animation: pulse-live 2.2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes pulse-live {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16,185,129,.5); }
+    50%       { opacity: .7; box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+  }
+
+  /* Headline */
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    font-weight: 800;
+    letter-spacing: -.05em;
+    line-height: 1.04;
+    color: #fff;
+    margin-bottom: 1.35rem;
+  }
+
+  .hero-title-line2 {
+    display: block;
+    background: linear-gradient(135deg, #10b981 0%, #34d399 45%, #6ee7b7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-desc {
+    font-size: 1.05rem;
+    color: rgba(255,255,255,.55);
+    line-height: 1.72;
+    max-width: 520px;
+    margin-bottom: 2.5rem;
+  }
+
+  /* CTA buttons */
+  .hero-cta { display: flex; gap: .85rem; flex-wrap: wrap; }
+
+  .btn-hero-primary {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border: none;
+    color: #fff;
+    font-weight: 700;
+    font-size: .92rem;
+    padding: .8rem 2rem;
+    border-radius: 10px;
+    transition: all .25s var(--ease);
+    box-shadow: 0 4px 20px rgba(16,185,129,.4);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+  }
+
+  .btn-hero-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(16,185,129,.5);
+    color: #fff;
+  }
+
+  .btn-hero-secondary {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.14);
+    color: rgba(255,255,255,.8);
+    font-weight: 600;
+    font-size: .92rem;
+    padding: .8rem 2rem;
+    border-radius: 10px;
+    transition: all .25s var(--ease);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+  }
+
+  .btn-hero-secondary:hover {
+    background: rgba(255,255,255,.1);
+    border-color: rgba(255,255,255,.24);
+    color: #fff;
+    transform: translateY(-2px);
+  }
+
+  /* Hero stats row */
+  .hero-stats {
+    display: flex;
+    gap: 0;
+    margin-top: 3.5rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid rgba(255,255,255,.06);
+    flex-wrap: wrap;
+  }
+
+  .hero-stat {
+    flex: 1;
+    min-width: 100px;
+    padding-right: 2rem;
+    position: relative;
+  }
+
+  .hero-stat:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 1rem;
+    top: 15%;
+    height: 70%;
+    width: 1px;
+    background: rgba(255,255,255,.08);
+  }
+
+  .hero-stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.65rem;
+    font-weight: 800;
+    letter-spacing: -.05em;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: .3rem;
+  }
+
+  .hero-stat-label {
+    font-size: .69rem;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.35);
+  }
+
+  /* ── Preview card (right side) ──────────────────────────────── */
+  .hero-preview {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .preview-card {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 18px;
+    padding: 1.5rem;
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+
+  .preview-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+
+  .preview-card-title {
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.5);
+  }
+
+  .preview-live-badge {
+    display: flex;
+    align-items: center;
+    gap: .35rem;
+    font-size: .66rem;
+    font-weight: 700;
+    color: #10b981;
+    background: rgba(16,185,129,.12);
+    border: 1px solid rgba(16,185,129,.2);
+    border-radius: 99px;
+    padding: .18rem .55rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+
+  /* Demo bars */
+  .demo-bars { display: flex; flex-direction: column; gap: .7rem; }
+
+  .dbar { display: flex; align-items: center; gap: .75rem; }
+  .dbar-label {
+    font-size: .72rem;
+    font-weight: 700;
+    color: rgba(255,255,255,.65);
+    width: 42px;
+    flex-shrink: 0;
+  }
+  .dbar-track {
+    flex: 1;
+    height: 9px;
+    background: rgba(255,255,255,.06);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .dbar-fill {
+    height: 100%;
+    border-radius: 99px;
+    width: 0;
+    transition: width 1.2s var(--ease);
+  }
+  .dbar-fill.animated { width: var(--bar-w); }
+  .dbar-value {
+    font-size: .7rem;
+    font-weight: 700;
+    color: rgba(255,255,255,.4);
+    width: 30px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .fill-pdp  { --bar-w: 74%; background: linear-gradient(90deg, #10b981, #34d399); }
+  .fill-apc  { --bar-w: 52%; background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+  .fill-anpp { --bar-w: 33%; background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .fill-cpp  { --bar-w: 21%; background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+  .fill-acn  { --bar-w: 13%; background: linear-gradient(90deg, #ef4444, #f87171); }
+
+  .preview-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,.06);
+  }
+
+  .preview-footer-label { font-size: .7rem; color: rgba(255,255,255,.3); font-weight: 600; }
+  .preview-footer-val   { font-family: 'Syne', sans-serif; font-size: .95rem; font-weight: 800; color: #10b981; }
+
+  /* Mini stat card */
+  .preview-mini {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: .65rem;
+  }
+
+  .mini-stat {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 12px;
+    padding: .85rem .75rem;
+    text-align: center;
+  }
+
+  .mini-stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: .25rem;
+  }
+
+  .mini-stat-lbl {
+    font-size: .62rem;
+    font-weight: 600;
+    color: rgba(255,255,255,.3);
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+
+  /* Floating badge above card */
+  .hero-floating-badge {
+    position: absolute;
+    top: -14px;
+    right: 18px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: .28rem .75rem;
+    border-radius: 99px;
+    box-shadow: 0 4px 14px rgba(16,185,129,.5);
+  }
+
+  /* ── Features section ───────────────────────────────────────── */
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: .65rem;
+  }
+
+  .section-heading {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.6rem, 3vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -.05em;
+    color: var(--text-primary);
+    margin-bottom: .75rem;
+    line-height: 1.1;
+  }
+
+  .section-subtitle {
+    font-size: .95rem;
+    color: var(--text-secondary);
+    max-width: 500px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  /* Feature cards */
+  .feat-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 2rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow);
+    transition: all .3s var(--ease);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent, var(--green));
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+
+  .feat-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, color-mix(in srgb, var(--accent, var(--green)) 6%, transparent) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .feat-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-xl);
+    border-color: color-mix(in srgb, var(--accent, var(--green)) 25%, var(--border));
+  }
+
+  .feat-card-blue  { --accent: var(--blue); }
+  .feat-card-gold  { --accent: var(--gold); }
+  .feat-card-green { --accent: var(--green); }
+
+  .feat-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1.35rem;
+    flex-shrink: 0;
+    transition: transform .3s var(--ease-spring);
+  }
+
+  .feat-card:hover .feat-icon { transform: scale(1.1) rotate(-4deg); }
+
+  .feat-icon-blue  { background: #eff6ff; color: #3b82f6; }
+  .feat-icon-gold  { background: #fffbeb; color: #f59e0b; }
+  .feat-icon-green { background: #f0fdf4; color: #10b981; }
+
+  .feat-q-label {
+    font-size: .68rem;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin-bottom: .5rem;
+  }
+
+  .feat-q-label.blue  { color: #3b82f6; }
+  .feat-q-label.gold  { color: #f59e0b; }
+  .feat-q-label.green { color: #10b981; }
+
+  .feat-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -.03em;
+    color: var(--text-primary);
+    margin-bottom: .6rem;
+  }
+
+  .feat-desc {
+    font-size: .875rem;
+    color: var(--text-secondary);
+    line-height: 1.68;
+    flex: 1;
+    margin-bottom: 1.5rem;
+  }
+
+  .feat-footer {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    font-size: .74rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── Info strip ─────────────────────────────────────────────── */
+  .info-strip {
+    background: var(--bg-mid);
+    padding: 3.5rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .info-strip::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 50%, rgba(16,185,129,.05), transparent 70%);
+    pointer-events: none;
+  }
+
+  .info-item {
+    text-align: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .info-icon-wrap {
+    width: 56px;
+    height: 56px;
+    background: rgba(16,185,129,.08);
+    border: 1px solid rgba(16,185,129,.14);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    color: #10b981;
+    margin: 0 auto .9rem;
+    transition: all .3s var(--ease-spring);
+  }
+
+  .info-item:hover .info-icon-wrap {
+    transform: translateY(-4px) scale(1.05);
+    background: rgba(16,185,129,.15);
+  }
+
+  .info-label {
+    font-family: 'Syne', sans-serif;
+    font-size: .88rem;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: .2rem;
+    letter-spacing: -.02em;
+  }
+
+  .info-sub {
+    font-size: .72rem;
+    color: rgba(255,255,255,.32);
+    font-weight: 500;
+    letter-spacing: .03em;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ================================================================
+     HERO
+================================================================ -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-blob hero-blob-1"></div>
+  <div class="hero-blob hero-blob-2"></div>
+  <div class="hero-blob hero-blob-3"></div>
+
+  <div class="container hero-content">
+    <div class="row align-items-center gy-5">
+
+      <!-- Left copy -->
+      <div class="col-lg-6 anim-fade-up">
+        <div class="hero-eyebrow">
+          <span class="live-dot"></span>
+          Delta State &bull; 2011 General Election
+        </div>
+
+        <h1 class="hero-title">
+          Nigeria Election
+          <span class="hero-title-line2">Results Portal</span>
+        </h1>
+
+        <p class="hero-desc">
+          Explore, analyse, and submit 2011 election results for Delta State.
+          From individual polling units to full LGA aggregations — instant insights, all in one place.
+        </p>
+
+        <div class="hero-cta">
+          <a href="{% url 'polling_unit' %}" class="btn-hero-primary">
+            <i class="bi bi-search"></i> Explore Results
+          </a>
+          <a href="{% url 'add_result' %}" class="btn-hero-secondary">
+            <i class="bi bi-plus-circle"></i> Add Results
+          </a>
+        </div>
+
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <div class="hero-stat-num">25</div>
+            <div class="hero-stat-label">LGAs</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-num">280+</div>
+            <div class="hero-stat-label">Polling Units</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-num">9</div>
+            <div class="hero-stat-label">Parties</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right visual -->
+      <div class="col-lg-6 d-none d-lg-block anim-fade-up anim-fade-up-2">
+        <div class="hero-preview" style="margin-left: auto;">
+
+          <!-- Main chart card -->
+          <div class="preview-card" style="position:relative;">
+            <span class="hero-floating-badge"><i class="bi bi-lightning-fill me-1"></i>Live Data</span>
+            <div class="preview-card-header">
+              <span class="preview-card-title">LGA Vote Distribution</span>
+              <span class="preview-live-badge">
+                <span class="live-dot" style="width:5px;height:5px;"></span> Live
+              </span>
+            </div>
+            <div class="demo-bars" id="demoBars">
+              <div class="dbar">
+                <span class="dbar-label">PDP</span>
+                <div class="dbar-track"><div class="dbar-fill fill-pdp"></div></div>
+                <span class="dbar-value">74%</span>
+              </div>
+              <div class="dbar">
+                <span class="dbar-label">APC</span>
+                <div class="dbar-track"><div class="dbar-fill fill-apc"></div></div>
+                <span class="dbar-value">52%</span>
+              </div>
+              <div class="dbar">
+                <span class="dbar-label">ANPP</span>
+                <div class="dbar-track"><div class="dbar-fill fill-anpp"></div></div>
+                <span class="dbar-value">33%</span>
+              </div>
+              <div class="dbar">
+                <span class="dbar-label">CPP</span>
+                <div class="dbar-track"><div class="dbar-fill fill-cpp"></div></div>
+                <span class="dbar-value">21%</span>
+              </div>
+              <div class="dbar">
+                <span class="dbar-label">ACN</span>
+                <div class="dbar-track"><div class="dbar-fill fill-acn"></div></div>
+                <span class="dbar-value">13%</span>
+              </div>
+            </div>
+            <div class="preview-footer">
+              <span class="preview-footer-label">Total votes tallied</span>
+              <span class="preview-footer-val">28,416</span>
+            </div>
+          </div>
+
+          <!-- Mini stats row -->
+          <div class="preview-mini">
+            <div class="mini-stat">
+              <div class="mini-stat-val">25</div>
+              <div class="mini-stat-lbl">LGAs</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-val">PDP</div>
+              <div class="mini-stat-lbl">Leading</div>
+            </div>
+            <div class="mini-stat">
+              <div class="mini-stat-val">281</div>
+              <div class="mini-stat-lbl">Units</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================
+     FEATURES
+================================================================ -->
+<section class="py-5 mt-1">
+  <div class="container">
+
+    <div class="text-center mb-5 reveal">
+      <div class="section-label"><i class="bi bi-grid-3x3-gap-fill"></i> Features</div>
+      <h2 class="section-heading">Everything you need</h2>
+      <p class="section-subtitle">
+        Three purpose-built pages covering the full election results workflow —
+        from viewing individual polling units to submitting new results.
+      </p>
+    </div>
+
+    <div class="row g-4">
+
+      <!-- Q1 -->
+      <div class="col-md-4 reveal reveal-delay-1">
+        <div class="feat-card feat-card-blue">
+          <div class="feat-icon feat-icon-blue">
+            <i class="bi bi-geo-alt-fill"></i>
+          </div>
+          <div class="feat-q-label blue">Question 1</div>
+          <div class="feat-title">Polling Unit Results</div>
+          <p class="feat-desc">
+            Select any of the 280+ polling units in Delta State from a searchable dropdown
+            and instantly view per-party vote totals, a dynamic bar chart, and the winning party highlighted.
+          </p>
+          <a href="{% url 'polling_unit' %}" class="btn btn-primary w-100 py-2">
+            <i class="bi bi-arrow-right-circle"></i> View Polling Units
+          </a>
+          <div class="feat-footer">
+            <i class="bi bi-database"></i> announced_pu_results
+          </div>
+        </div>
+      </div>
+
+      <!-- Q2 -->
+      <div class="col-md-4 reveal reveal-delay-2">
+        <div class="feat-card feat-card-gold">
+          <div class="feat-icon feat-icon-gold">
+            <i class="bi bi-map-fill"></i>
+          </div>
+          <div class="feat-q-label gold">Question 2</div>
+          <div class="feat-title">LGA Aggregated Results</div>
+          <p class="feat-desc">
+            Pick any Local Government Area and see total votes per party, summed independently
+            from all its polling unit records — never from the announced LGA results table.
+          </p>
+          <a href="{% url 'lga_results' %}" class="btn btn-warning w-100 py-2">
+            <i class="bi bi-arrow-right-circle"></i> View LGA Results
+          </a>
+          <div class="feat-footer">
+            <i class="bi bi-calculator"></i> Aggregated from polling units
+          </div>
+        </div>
+      </div>
+
+      <!-- Q3 -->
+      <div class="col-md-4 reveal reveal-delay-3">
+        <div class="feat-card feat-card-green">
+          <div class="feat-icon feat-icon-green">
+            <i class="bi bi-pencil-square"></i>
+          </div>
+          <div class="feat-q-label green">Question 3</div>
+          <div class="feat-title">Add Polling Unit Results</div>
+          <p class="feat-desc">
+            Submit election results for a polling unit with no prior entries. All party scores
+            are validated and committed atomically — one transaction, zero partial saves.
+          </p>
+          <a href="{% url 'add_result' %}" class="btn btn-success w-100 py-2">
+            <i class="bi bi-arrow-right-circle"></i> Add Results
+          </a>
+          <div class="feat-footer">
+            <i class="bi bi-shield-check"></i> Validated &amp; transactional
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================
+     INFO STRIP
+================================================================ -->
+<section class="info-strip">
+  <div class="container">
+    <div class="row gy-4 justify-content-center">
+
+      <div class="col-6 col-md-3 reveal reveal-delay-1">
+        <div class="info-item">
+          <div class="info-icon-wrap"><i class="bi bi-flag-fill"></i></div>
+          <div class="info-label">Delta State</div>
+          <div class="info-sub">State ID &bull; 25</div>
+        </div>
+      </div>
+
+      <div class="col-6 col-md-3 reveal reveal-delay-2">
+        <div class="info-item">
+          <div class="info-icon-wrap"><i class="bi bi-calendar-event-fill"></i></div>
+          <div class="info-label">2011 Election</div>
+          <div class="info-sub">Nigerian General Election</div>
+        </div>
+      </div>
+
+      <div class="col-6 col-md-3 reveal reveal-delay-3">
+        <div class="info-item">
+          <div class="info-icon-wrap"><i class="bi bi-diagram-3-fill"></i></div>
+          <div class="info-label">3-Tier Hierarchy</div>
+          <div class="info-sub">Unit → Ward → LGA</div>
+        </div>
+      </div>
+
+      <div class="col-6 col-md-3 reveal reveal-delay-4">
+        <div class="info-item">
+          <div class="info-icon-wrap"><i class="bi bi-shield-lock-fill"></i></div>
+          <div class="info-label">Read-Only DB</div>
+          <div class="info-sub">managed = False</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  'use strict';
+
+  // Animate demo bars on load
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      document.querySelectorAll('.dbar-fill').forEach(el => el.classList.add('animated'));
+    }, 300);
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,451 @@
+{% extends "base.html" %}
+
+{% block title %}LGA Aggregated Results{% endblock %}
+
+{% block extra_head %}
+<style>
+  :root {
+    --p0: #10b981; --p1: #3b82f6; --p2: #f59e0b; --p3: #8b5cf6;
+    --p4: #ef4444; --p5: #06b6d4; --p6: #f43f5e; --p7: #6366f1;
+    --p8: #84cc16; --p9: #ec4899;
+  }
+
+  .rank-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    font-size: .7rem; font-weight: 800;
+    background: var(--border); color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .rank-badge.rank-1 {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff; box-shadow: 0 2px 8px rgba(245,158,11,.4);
+  }
+
+  .party-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0; display: inline-block;
+  }
+
+  .share-cell { min-width: 90px; }
+  .share-label { font-size: .72rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 3px; }
+
+  /* Comparison banner */
+  .comparison-banner {
+    background: linear-gradient(135deg, #fffbeb, #fff7ed);
+    border: 1px solid #fde68a;
+    border-left: 4px solid var(--gold);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: .85rem;
+  }
+
+  .comparison-banner-icon {
+    width: 36px; height: 36px;
+    background: rgba(245,158,11,.12);
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; color: var(--gold);
+    flex-shrink: 0;
+  }
+
+  .comparison-banner-body { flex: 1; }
+
+  .comparison-banner-title {
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #92400e;
+    margin-bottom: .25rem;
+  }
+
+  .comparison-banner-text {
+    font-size: .84rem;
+    color: #78350f;
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  /* Winner highlight in chart area */
+  .winner-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    background: var(--green-xlight);
+    border: 1px solid #bbf7d0;
+    color: #065f46;
+    border-radius: 99px;
+    font-size: .74rem;
+    font-weight: 700;
+    padding: .28rem .85rem;
+    letter-spacing: .03em;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page header -->
+<div class="page-header">
+  <div class="page-header-noise"></div>
+  <div class="page-header-glow"></div>
+  <div class="container page-header-inner">
+    <div class="page-header-badge badge-gold">
+      <i class="bi bi-map-fill"></i> Question 2
+    </div>
+    <h1><i class="bi bi-map-fill me-2" style="opacity:.7;"></i>LGA Aggregated Results</h1>
+    <p>Votes summed from polling unit records — independent of officially announced LGA figures.</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+
+  <!-- ============================================================
+       Selection card
+  ============================================================ -->
+  <div class="select-card mb-4 anim-fade-up">
+    <div class="select-card-header">
+      <div class="select-card-icon" style="color:#f59e0b;">
+        <i class="bi bi-funnel-fill"></i>
+      </div>
+      <span class="select-card-title">Choose a Local Government Area</span>
+
+      {% if lgas %}
+      <span class="ms-auto" style="font-size:.72rem;font-weight:600;color:rgba(255,255,255,.3);letter-spacing:.04em;">
+        {{ lgas|length }} LGAs
+      </span>
+      {% endif %}
+    </div>
+
+    <div class="select-card-body">
+      <form method="get" action="{% url 'lga_results' %}" class="row g-3 align-items-end">
+
+        <div class="col-12 col-md-9">
+          <label class="form-label">
+            Local Government Area
+            <span class="text-muted fw-normal ms-1" style="font-size:.8rem;">— Delta State</span>
+          </label>
+
+          <div class="search-filter-wrap mb-2">
+            <i class="bi bi-search"></i>
+            <input
+              type="text"
+              class="search-filter-input"
+              placeholder="Type to search LGAs…"
+              data-search-select="lga_id"
+              autocomplete="off"
+            />
+          </div>
+
+          <select name="lga_id" id="lga_id" class="form-select form-select-lg">
+            <option value="">— Select an LGA —</option>
+            {% for lga in lgas %}
+            <option
+              value="{{ lga.lga_id }}"
+              {% if selected_lga_id and lga.lga_id|stringformat:"s" == selected_lga_id %}selected{% endif %}
+            >{{ lga.lga_name }}</option>
+            {% endfor %}
+          </select>
+
+          <p class="form-text mt-2">
+            <i class="bi bi-info-circle me-1"></i>
+            Results are computed by summing all polling unit returns for the selected LGA.
+          </p>
+        </div>
+
+        <div class="col-12 col-md-3">
+          <button type="submit" class="btn btn-warning btn-lg w-100">
+            <i class="bi bi-search"></i> View Results
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       No selection yet
+  ============================================================ -->
+  {% if not selected_lga_id %}
+  <div class="empty-prompt anim-fade-up">
+    <div class="empty-prompt-illustration" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);">
+      <i class="bi bi-map" style="color:#f59e0b;"></i>
+    </div>
+    <h4>No LGA selected</h4>
+    <p>Choose a Local Government Area from the dropdown above to see aggregated results.</p>
+  </div>
+
+  <!-- ============================================================
+       No results for selected LGA
+  ============================================================ -->
+  {% elif not results %}
+  <div class="alert alert-info d-flex align-items-center gap-3 p-3 rounded-3 shadow-sm anim-fade-up"
+       style="background:#eff6ff; border-left:4px solid #3b82f6; border:none;">
+    <i class="bi bi-info-circle-fill fs-5 text-primary flex-shrink-0"></i>
+    <div>
+      No polling unit results found for
+      <strong>{{ selected_lga.lga_name }}</strong>.
+      {% if polling_unit_count %}
+        {{ polling_unit_count }} polling unit(s) exist but none have recorded results.
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ============================================================
+       Results display
+  ============================================================ -->
+  {% else %}
+
+  <!-- LGA heading -->
+  <div class="entity-title-block gold-variant anim-fade-up">
+    <div class="entity-icon gold-icon"><i class="bi bi-map-fill"></i></div>
+    <div>
+      <p class="entity-name">{{ selected_lga.lga_name }} LGA</p>
+      <p class="entity-sub">Delta State &bull; 2011 General Election</p>
+    </div>
+    {% if winner %}
+    <div class="ms-auto d-none d-md-block">
+      <span class="winner-pill">
+        <i class="bi bi-trophy-fill"></i> {{ winner }} leads
+      </span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Comparison note -->
+  <div class="comparison-banner anim-fade-up">
+    <div class="comparison-banner-icon"><i class="bi bi-calculator-fill"></i></div>
+    <div class="comparison-banner-body">
+      <div class="comparison-banner-title">Aggregated from Polling Units</div>
+      <p class="comparison-banner-text">
+        These results are <strong>independently computed</strong> by summing vote scores from all
+        {{ polling_unit_count }} polling unit(s) within {{ selected_lga.lga_name }} LGA.
+        They are <em>not</em> sourced from the officially announced LGA results table.
+      </p>
+    </div>
+  </div>
+
+  <!-- Stat strip -->
+  <div class="stat-strip anim-fade-up">
+
+    <div class="stat-tile tile-blue">
+      <div class="stat-tile-icon"><i class="bi bi-ballot-fill"></i></div>
+      <div class="stat-tile-value count-up" data-target="{{ total_votes }}">{{ total_votes }}</div>
+      <div class="stat-tile-label">Total Votes</div>
+    </div>
+
+    <div class="stat-tile tile-purple">
+      <div class="stat-tile-icon"><i class="bi bi-pin-map-fill"></i></div>
+      <div class="stat-tile-value count-up" data-target="{{ polling_unit_count }}">{{ polling_unit_count }}</div>
+      <div class="stat-tile-label">Units Counted</div>
+    </div>
+
+    <div class="stat-tile tile-gold">
+      <div class="stat-tile-icon"><i class="bi bi-trophy-fill"></i></div>
+      <div class="stat-tile-value">{{ winner }}</div>
+      <div class="stat-tile-label">Winning Party</div>
+    </div>
+
+    <div class="stat-tile tile-green">
+      <div class="stat-tile-icon"><i class="bi bi-flag-fill"></i></div>
+      <div class="stat-tile-value count-up" data-target="{{ results|length }}">{{ results|length }}</div>
+      <div class="stat-tile-label">Parties</div>
+    </div>
+
+  </div>
+
+  <!-- Table + Chart -->
+  <div class="row g-4 anim-fade-up anim-fade-up-1">
+
+    <!-- Table -->
+    <div class="col-lg-5">
+      <div class="results-panel h-100">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <i class="bi bi-table" style="color:#f59e0b;"></i>
+            Party Totals
+          </div>
+          <span style="font-size:.7rem;color:rgba(255,255,255,.3);">{{ results|length }} parties</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width:40px;">#</th>
+                <th>Party</th>
+                <th class="text-end" style="width:90px;">Total Votes</th>
+                <th class="share-cell">Share</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for result in results %}
+              <tr {% if forloop.first %}class="row-winner"{% endif %}>
+                <td>
+                  <span class="rank-badge {% if forloop.first %}rank-1{% endif %}">
+                    {{ forloop.counter }}
+                  </span>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="party-dot"
+                      style="background:var(--p{{ forloop.counter0|add:'0' }}, #94a3b8);"></span>
+                    <span class="fw-600">{{ result.party_abbreviation }}</span>
+                    {% if forloop.first %}
+                    <span class="badge bg-success" style="font-size:.62rem;">
+                      <i class="bi bi-trophy-fill me-1"></i>Winner
+                    </span>
+                    {% endif %}
+                  </div>
+                </td>
+                <td class="text-end fw-700">{{ result.total_score }}</td>
+                <td class="share-cell">
+                  {% if total_votes %}
+                    {% widthratio result.total_score total_votes 100 as pct %}
+                    <div class="share-label">{{ pct }}%</div>
+                    <div class="vote-bar-track">
+                      <div class="vote-bar-fill"
+                        style="--bar-color:var(--p{{ forloop.counter0|add:'0' }},#94a3b8); width:{{ pct }}%;"></div>
+                    </div>
+                  {% else %}
+                    <div class="share-label">0%</div>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2">Total</td>
+                <td class="text-end">{{ total_votes }}</td>
+                <td>100%</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="col-lg-7">
+      <div class="results-panel h-100" style="min-height:420px;">
+        <div class="panel-header">
+          <div class="panel-header-left">
+            <i class="bi bi-bar-chart" style="color:#f59e0b;"></i>
+            Votes by Party
+          </div>
+          <span style="font-size:.7rem;color:rgba(255,255,255,.3);">
+            {{ selected_lga.lga_name }} LGA
+          </span>
+        </div>
+        <div class="chart-body" style="min-height:360px;">
+          <canvas id="lgaChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /row -->
+  {% endif %}
+
+</div><!-- /container -->
+{% endblock %}
+
+{% block extra_scripts %}
+{% if chart_labels and chart_data %}
+<script>
+(function () {
+  'use strict';
+
+  const labels = {{ chart_labels|safe }};
+  const data   = {{ chart_data|safe }};
+
+  const palette = [
+    '#10b981','#3b82f6','#f59e0b','#8b5cf6','#ef4444',
+    '#06b6d4','#f43f5e','#6366f1','#84cc16','#ec4899',
+    '#14b8a6','#eab308','#a855f7','#64748b','#78716c',
+  ];
+
+  const colors = labels.map((_, i) => palette[i % palette.length]);
+
+  const ctx = document.getElementById('lgaChart');
+  if (!ctx) return;
+  const cctx = ctx.getContext('2d');
+
+  // Build vertical gradients
+  const bgColors = colors.map(c => {
+    const g = cctx.createLinearGradient(0, 0, 0, 600);
+    g.addColorStop(0, c + 'ee');
+    g.addColorStop(1, c + '33');
+    return g;
+  });
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Total Votes',
+        data,
+        backgroundColor: bgColors,
+        borderColor: colors,
+        borderWidth: 0,
+        borderRadius: 7,
+        borderSkipped: false,
+        barThickness: 'flex',
+        maxBarThickness: 48,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: 1000,
+        easing: 'easeOutCubic',
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleColor: '#94a3b8',
+          bodyColor: '#fff',
+          borderColor: 'rgba(255,255,255,.08)',
+          borderWidth: 1,
+          padding: { top: 10, bottom: 10, left: 14, right: 14 },
+          cornerRadius: 10,
+          displayColors: true,
+          boxWidth: 10, boxHeight: 10, boxPadding: 4,
+          callbacks: {
+            label: ctx => `  ${ctx.parsed.y.toLocaleString()} votes`,
+          },
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,.04)', drawBorder: false },
+          border: { display: false },
+          ticks: {
+            font: { size: 11, family: 'Inter' },
+            color: '#94a3b8',
+            callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v,
+          },
+        },
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: {
+            font: { size: 12, weight: '600', family: 'Inter' },
+            color: '#475569',
+          },
+        },
+      },
+    },
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}
