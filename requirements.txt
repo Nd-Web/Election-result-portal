@@ -1,4 +1,7 @@
-django>=4.2
-mysqlclient
+django>=4.2,<5
+PyMySQL>=1.1.0
 django-crispy-forms
 crispy-bootstrap5
+whitenoise>=6.6
+dj-database-url>=2.1
+gunicorn

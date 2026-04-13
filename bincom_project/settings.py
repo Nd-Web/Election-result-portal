@@ -1,34 +1,33 @@
 """
 Django settings for bincom_project.
-
-Production-quality settings for the Bincom Election Results Portal.
-For production deployment, set SECRET_KEY via environment variable and
-set DEBUG=False with proper ALLOWED_HOSTS.
 """
 
 import os
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
+import dj_database_url
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ---------------------------------------------------------------------------
-# Security
-# ---------------------------------------------------------------------------
 SECRET_KEY = os.environ.get(
     'DJANGO_SECRET_KEY',
     'django-insecure-bincom-dev-key-change-in-production-xk2#p!q7@9z'
 )
 
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get(
+    'DJANGO_ALLOWED_HOSTS',
+    '.vercel.app,.now.sh,localhost,127.0.0.1'
+).split(',')
 
-# ---------------------------------------------------------------------------
-# Application definition
-# ---------------------------------------------------------------------------
+CSRF_TRUSTED_ORIGINS = [
+    o for o in os.environ.get(
+        'DJANGO_CSRF_TRUSTED_ORIGINS',
+        'https://*.vercel.app'
+    ).split(',') if o
+]
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -36,15 +35,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Third-party
     'crispy_forms',
     'crispy_bootstrap5',
-    # Local
     'elections',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -73,27 +71,37 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'bincom_project.wsgi.application'
 
-# ---------------------------------------------------------------------------
-# Database — MySQL (pre-existing, do NOT run migrations)
-# ---------------------------------------------------------------------------
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'bincom_test',
-        'USER': 'root',
-        'PASSWORD': '2468013579Boy@',
-        'HOST': 'localhost',
-        'PORT': '3306',
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
-    }
-}
+# Database — Railway MySQL via DATABASE_URL (falls back to local dev config)
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
-# ---------------------------------------------------------------------------
-# Password validation
-# ---------------------------------------------------------------------------
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+    DATABASES['default'].setdefault('OPTIONS', {})
+    DATABASES['default']['OPTIONS'].update({
+        'charset': 'utf8mb4',
+    })
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'bincom_test',
+            'USER': 'root',
+            'PASSWORD': '2468013579Boy@',
+            'HOST': 'localhost',
+            'PORT': '3306',
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            },
+        }
+    }
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -101,29 +109,18 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# ---------------------------------------------------------------------------
-# Internationalization
-# ---------------------------------------------------------------------------
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Africa/Lagos'
 USE_I18N = True
-USE_TZ = False  # The database stores naive datetimes — keep consistent
+USE_TZ = False
 
-# ---------------------------------------------------------------------------
-# Static files
-# ---------------------------------------------------------------------------
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# ---------------------------------------------------------------------------
-# Crispy Forms
-# ---------------------------------------------------------------------------
 CRISPY_ALLOWED_TEMPLATE_PACKS = 'bootstrap5'
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
-# ---------------------------------------------------------------------------
-# Messages
-# ---------------------------------------------------------------------------
 from django.contrib.messages import constants as message_constants  # noqa: E402
 
 MESSAGE_TAGS = {
@@ -134,7 +131,8 @@ MESSAGE_TAGS = {
     message_constants.ERROR: 'danger',
 }
 
-# ---------------------------------------------------------------------------
-# Redirects
-# ---------------------------------------------------------------------------
 LOGIN_REDIRECT_URL = '/'
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
